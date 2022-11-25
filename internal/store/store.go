@@ -12,34 +12,42 @@ type FlowDataValue struct {
 	BytesRx int
 }
 
-var initStore bool = false
-var store map[int]map[FlowDataKey]FlowDataValue
+type flowDataStore struct {
+	init bool
+	kv   map[int]map[FlowDataKey]FlowDataValue
+}
+
+var store flowDataStore
 
 func initialize() {
-	store = make(map[int]map[FlowDataKey]FlowDataValue)
-	initStore = true
+	store.kv = make(map[int]map[FlowDataKey]FlowDataValue)
+	store.init = true
 }
 
 func Save(key FlowDataKey, value FlowDataValue) {
-	if initStore == false {
+	if store.init == false {
 		initialize()
 	}
 
-	valueMap := store[key.Hour]
+	valueMap := store.kv[key.Hour]
 	if valueMap == nil {
-		store[key.Hour] = make(map[FlowDataKey]FlowDataValue)
+		store.kv[key.Hour] = make(map[FlowDataKey]FlowDataValue)
 	}
-	store[key.Hour][key] = value
+	store.kv[key.Hour][key] = value
 }
 
 func LookupValue(key FlowDataKey) FlowDataValue {
-	if initStore == false {
+	if store.init == false {
 		initialize()
 	}
 
-	return store[key.Hour][key]
+	return store.kv[key.Hour][key]
 }
 
 func LookupHour(hour int) map[FlowDataKey]FlowDataValue {
-	return store[hour]
+	if store.init == false {
+		initialize()
+	}
+
+	return store.kv[hour]
 }
