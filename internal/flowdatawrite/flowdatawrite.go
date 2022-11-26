@@ -10,9 +10,14 @@ import (
 	"github.com/nicboul/flowdata/internal/aggregator"
 	"github.com/nicboul/flowdata/internal/flowdata"
 	"github.com/nicboul/flowdata/internal/queue"
+	"github.com/nicboul/flowdata/internal/store"
 )
 
-func Handler(w http.ResponseWriter, r *http.Request) {
+type FlowDataWrite struct {
+	Store *store.FlowDataStore
+}
+
+func (f *FlowDataWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -30,5 +35,5 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	queue.Push(flowData)
 
-	aggregator.Aggregate()
+	aggregator.Aggregate(f.Store)
 }

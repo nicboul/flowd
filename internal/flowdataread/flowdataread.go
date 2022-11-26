@@ -10,7 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Handler(w http.ResponseWriter, r *http.Request) {
+type FlowDataRead struct {
+	Store *store.FlowDataStore
+}
+
+func (f *FlowDataRead) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hourStr := r.URL.Query().Get("hour")
 	hour, err := strconv.Atoi(hourStr)
 	if err != nil {
@@ -20,7 +24,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	flowDataResponse := []flowdata.FlowData{}
 
-	flows := store.LookupHour(hour)
+	flows := f.Store.LookupHour(hour)
 	for key, value := range flows {
 		var flowData flowdata.FlowData
 		flowData.SrcApp = key.SrcApp

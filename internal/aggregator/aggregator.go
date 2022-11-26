@@ -6,7 +6,7 @@ import (
 	"github.com/nicboul/flowdata/internal/store"
 )
 
-func Aggregate() {
+func Aggregate(s *store.FlowDataStore) {
 	var flowData []flowdata.FlowData
 	flowData = queue.Consume()
 
@@ -18,11 +18,11 @@ func Aggregate() {
 		key.VpcId = item.VpcId
 		key.Hour = item.Hour
 
-		value := store.LookupValue(key)
+		value := s.LookupValue(key)
 
 		value.BytesRx += item.BytesRx
 		value.BytesTx += item.BytesTx
 
-		store.Save(key, value)
+		s.Save(key, value)
 	}
 }

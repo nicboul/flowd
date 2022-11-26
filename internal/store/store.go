@@ -14,56 +14,41 @@ type FlowDataValue struct {
 	BytesRx int
 }
 
-type flowDataStore struct {
+type FlowDataStore struct {
 	lock sync.RWMutex
 	init bool
 	kv   map[int]map[FlowDataKey]FlowDataValue
 }
 
-var store flowDataStore
-
-func initialize() {
-	store.kv = make(map[int]map[FlowDataKey]FlowDataValue)
-	store.init = true
+func NewFlowDataStore() *FlowDataStore {
+	return &FlowDataStore{
+		lock: sync.RWMutex{},
+		kv:   map[int]map[FlowDataKey]FlowDataValue{},
+		init: false,
+	}
 }
 
-func Save(key FlowDataKey, value FlowDataValue) {
-	store.lock.Lock()
-	if store.init == false {
-		initialize()
-	}
+func (s *FlowDataStore) Save(key FlowDataKey, value FlowDataValue) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
-	valueMap := store.kv[key.Hour]
+	valueMap := s.kv[key.Hour]
 	if valueMap == nil {
-		store.kv[key.Hour] = make(map[FlowDataKey]FlowDataValue)
+		s.kv[key.Hour] = make(map[FlowDataKey]FlowDataValue)
 	}
-	store.kv[key.Hour][key] = value
-
-	store.lock.Unlock()
+	s.kv[key.Hour][key] = value
 }
 
-func LookupValue(key FlowDataKey) FlowDataValue {
-	store.lock.Lock()
-	if store.init == false {
-		initialize()
-	}
-	store.lock.Unlock()
+func (s *FlowDataStore) LookupValue(key FlowDataKey) FlowDataValue {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
-	store.lock.RLock()
-	defer store.lock.RUnlock()
-
-	return store.kv[key.Hour][key]
+	return s.kv[key.Hour][key]
 }
 
-func LookupHour(hour int) map[FlowDataKey]FlowDataValue {
-	store.lock.Lock()
-	if store.init == false {
-		initialize()
-	}
-	store.lock.Unlock()
+func (s *FlowDataStore) LookupHour(hour int) map[FlowDataKey]FlowDataValue {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
-	store.lock.RLock()
-	defer store.lock.RUnlock()
-
-	return store.kv[hour]
+	return s.kv[hour]
 }

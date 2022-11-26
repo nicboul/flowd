@@ -8,22 +8,29 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nicboul/flowdata/internal/flowdataread"
 	"github.com/nicboul/flowdata/internal/flowdatawrite"
+	"github.com/nicboul/flowdata/internal/store"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
 type FlowDataParams struct {
 	Timeout time.Duration
+	Store   *store.FlowDataStore
 }
 
-func NewFlowData(p FlowDataParams) *mux.Router {
+func NewFlowDataServer(p FlowDataParams) *mux.Router {
 
-	handlerWrite := http.HandlerFunc(flowdatawrite.Handler)
-	handlerRead := http.HandlerFunc(flowdataread.Handler)
+	flowDataWriteHandler := &flowdatawrite.FlowDataWrite{
+		Store: p.Store,
+	}
+
+	flowDataReadHandler := &flowdataread.FlowDataRead{
+		Store: p.Store,
+	}
 
 	muxRouter := mux.NewRouter()
-	muxRouter.Methods("POST").PathPrefix("/flows").Handler(handlerWrite)
-	muxRouter.Methods("GET").PathPrefix("/flows").Handler(handlerRead)
+	muxRouter.Methods("POST").PathPrefix("/flows").Handler(flowDataWriteHandler)
+	muxRouter.Methods("GET").PathPrefix("/flows").Handler(flowDataReadHandler)
 
 	return muxRouter
 }
@@ -61,9 +68,10 @@ func main() {
 
 		params := FlowDataParams{
 			Timeout: time.Second * time.Duration(int64(c.Int("timeout"))),
+			Store:   store.NewFlowDataStore(),
 		}
 
-		server := NewFlowData(params)
+		server := NewFlowDataServer(params)
 		listen := c.String("listen") + ":" + c.String("port")
 
 		log.Info("listening on: ", listen)
