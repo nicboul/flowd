@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/nicboul/flowdata/internal/aggregator"
-	"github.com/nicboul/flowdata/internal/flowdata"
 	"github.com/nicboul/flowdata/internal/queue"
 	"github.com/nicboul/flowdata/internal/store"
 )
@@ -25,7 +24,7 @@ func (f *FlowDataWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var flowData []flowdata.FlowData
+	var flowData []queue.FlowData
 	err = json.Unmarshal(b, &flowData)
 	if err != nil {
 		log.Warn(err.Error())

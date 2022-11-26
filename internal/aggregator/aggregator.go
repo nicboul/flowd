@@ -1,13 +1,12 @@
 package aggregator
 
 import (
-	"github.com/nicboul/flowdata/internal/flowdata"
 	"github.com/nicboul/flowdata/internal/queue"
 	"github.com/nicboul/flowdata/internal/store"
 )
 
 func Aggregate(s *store.FlowDataStore) {
-	var flowData []flowdata.FlowData
+	var flowData []queue.FlowData
 	flowData = queue.Consume()
 
 	var key store.FlowDataKey

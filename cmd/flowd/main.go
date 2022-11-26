@@ -5,35 +5,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/nicboul/flowdata/internal/flowdataread"
-	"github.com/nicboul/flowdata/internal/flowdatawrite"
-	"github.com/nicboul/flowdata/internal/store"
+	"github.com/nicboul/flowdata/internal/flowdata"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
-
-type FlowDataParams struct {
-	Timeout time.Duration
-	Store   *store.FlowDataStore
-}
-
-func NewFlowDataServer(p FlowDataParams) *mux.Router {
-
-	flowDataWriteHandler := &flowdatawrite.FlowDataWrite{
-		Store: p.Store,
-	}
-
-	flowDataReadHandler := &flowdataread.FlowDataRead{
-		Store: p.Store,
-	}
-
-	muxRouter := mux.NewRouter()
-	muxRouter.Methods("POST").PathPrefix("/flows").Handler(flowDataWriteHandler)
-	muxRouter.Methods("GET").PathPrefix("/flows").Handler(flowDataReadHandler)
-
-	return muxRouter
-}
 
 func main() {
 
@@ -66,12 +41,11 @@ func main() {
 		log.SetFormatter(&log.JSONFormatter{})
 		log.Info("starting service flowd")
 
-		params := FlowDataParams{
+		params := flowdata.FlowDataParams{
 			Timeout: time.Second * time.Duration(int64(c.Int("timeout"))),
-			Store:   store.NewFlowDataStore(),
 		}
 
-		server := NewFlowDataServer(params)
+		server := flowdata.NewFlowDataServer(params)
 		listen := c.String("listen") + ":" + c.String("port")
 
 		log.Info("listening on: ", listen)

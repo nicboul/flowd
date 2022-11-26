@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/nicboul/flowdata/internal/flowdata"
+	"github.com/nicboul/flowdata/internal/queue"
 	"github.com/nicboul/flowdata/internal/store"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,11 +22,11 @@ func (f *FlowDataRead) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	flowDataResponse := []flowdata.FlowData{}
+	flowDataResponse := []queue.FlowData{}
 
 	flows := f.Store.LookupHour(hour)
 	for key, value := range flows {
-		var flowData flowdata.FlowData
+		var flowData queue.FlowData
 		flowData.SrcApp = key.SrcApp
 		flowData.DestApp = key.DestApp
 		flowData.VpcId = key.VpcId
