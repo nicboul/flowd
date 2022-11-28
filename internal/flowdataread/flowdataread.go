@@ -24,7 +24,7 @@ func (f *FlowDataRead) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	flowDataResponse := []queue.FlowData{}
 
-	flows := f.Store.LookupHour(hour)
+	flows := f.Store.LookupByHour(hour)
 	for key, value := range flows {
 		var flowData queue.FlowData
 		flowData.SrcApp = key.SrcApp

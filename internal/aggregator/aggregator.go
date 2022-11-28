@@ -9,7 +9,7 @@ func Aggregate(s *store.FlowDataStore) {
 	var flowData []queue.FlowData
 	flowData = queue.Consume()
 
-	var key store.FlowDataKey
+	var key store.FlowDataTuple
 
 	for _, item := range flowData {
 		key.SrcApp = item.SrcApp
@@ -17,11 +17,11 @@ func Aggregate(s *store.FlowDataStore) {
 		key.VpcId = item.VpcId
 		key.Hour = item.Hour
 
-		value := s.LookupValue(key)
+		value := s.LookupByTuple(key)
 
 		value.BytesRx += item.BytesRx
 		value.BytesTx += item.BytesTx
 
-		s.Save(key, value)
+		s.Save(&key, &value)
 	}
 }
