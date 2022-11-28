@@ -1,7 +1,5 @@
 package queue
 
-import "sync"
-
 type FlowData struct {
 	SrcApp  string `json:"src_app"`
 	DestApp string `json:"dest_app"`
@@ -11,21 +9,21 @@ type FlowData struct {
 	Hour    int    `json:"hour"`
 }
 
-var fifoQueue []FlowData
-var lock sync.Mutex
-
-func Push(flowData []FlowData) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	fifoQueue = append(fifoQueue, flowData...)
+type FlowDataQueue struct {
+	Channel chan []FlowData
 }
 
-func Consume() []FlowData {
-	lock.Lock()
-	defer lock.Unlock()
+func NewFlowDataQueue(size int) *FlowDataQueue {
+	return &FlowDataQueue{
+		Channel: make(chan []FlowData, size),
+	}
+}
 
-	flowData := fifoQueue
-	fifoQueue = nil
-	return flowData
+func (q *FlowDataQueue) TryEnqueue(flowData []FlowData) bool {
+	select {
+	case q.Channel <- flowData:
+		return true
+	default:
+		return false
+	}
 }

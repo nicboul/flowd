@@ -5,23 +5,33 @@ import (
 	"github.com/nicboul/flowdata/internal/store"
 )
 
-func Aggregate(s *store.FlowDataStore) {
-	var flowData []queue.FlowData
-	flowData = queue.Consume()
+type aggregator struct {
+	Queue *queue.FlowDataQueue
+	Store *store.FlowDataStore
+}
 
-	var key store.FlowDataTuple
+func NewAggregator(queue *queue.FlowDataQueue, store *store.FlowDataStore) *aggregator {
+	return &aggregator{
+		Queue: queue,
+		Store: store,
+	}
+}
 
-	for _, item := range flowData {
-		key.SrcApp = item.SrcApp
-		key.DestApp = item.DestApp
-		key.VpcId = item.VpcId
-		key.Hour = item.Hour
+func (a *aggregator) Aggregator() {
+	for flowData := range a.Queue.Channel {
+		var key store.FlowDataTuple
+		for _, item := range flowData {
+			key.SrcApp = item.SrcApp
+			key.DestApp = item.DestApp
+			key.VpcId = item.VpcId
+			key.Hour = item.Hour
 
-		value := s.LookupByTuple(key)
+			value := a.Store.LookupByTuple(key)
 
-		value.BytesRx += item.BytesRx
-		value.BytesTx += item.BytesTx
+			value.BytesRx += item.BytesRx
+			value.BytesTx += item.BytesTx
 
-		s.Save(&key, &value)
+			a.Store.Save(&key, &value)
+		}
 	}
 }

@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/nicboul/flowdata/internal/flowdata"
+	"github.com/nicboul/flowdata/internal/queue"
+	"github.com/nicboul/flowdata/internal/store"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -43,6 +45,8 @@ func main() {
 
 		params := flowdata.FlowDataParams{
 			Timeout: time.Second * time.Duration(int64(c.Int("timeout"))),
+			Store:   store.NewFlowDataStore(),
+			Queue:   queue.NewFlowDataQueue(100),
 		}
 
 		server := flowdata.NewFlowDataServer(params)

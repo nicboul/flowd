@@ -7,13 +7,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/nicboul/flowdata/internal/aggregator"
 	"github.com/nicboul/flowdata/internal/queue"
-	"github.com/nicboul/flowdata/internal/store"
 )
 
 type FlowDataWrite struct {
-	Store *store.FlowDataStore
+	Queue *queue.FlowDataQueue
 }
 
 func (f *FlowDataWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +30,5 @@ func (f *FlowDataWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	queue.Push(flowData)
-
-	aggregator.Aggregate(f.Store)
+	f.Queue.TryEnqueue(flowData)
 }

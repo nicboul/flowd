@@ -4,22 +4,26 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/nicboul/flowdata/internal/aggregator"
 	"github.com/nicboul/flowdata/internal/flowdataread"
 	"github.com/nicboul/flowdata/internal/flowdatawrite"
+	"github.com/nicboul/flowdata/internal/queue"
 	"github.com/nicboul/flowdata/internal/store"
 )
 
 type FlowDataParams struct {
 	Timeout time.Duration
 	Store   *store.FlowDataStore
+	Queue   *queue.FlowDataQueue
 }
 
 func NewFlowDataServer(p FlowDataParams) *mux.Router {
 
-	p.Store = store.NewFlowDataStore()
+	aggregator := aggregator.NewAggregator(p.Queue, p.Store)
+	go aggregator.Aggregator()
 
 	flowDataWriteHandler := &flowdatawrite.FlowDataWrite{
-		Store: p.Store,
+		Queue: p.Queue,
 	}
 
 	flowDataReadHandler := &flowdataread.FlowDataRead{
