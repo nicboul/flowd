@@ -5,19 +5,19 @@ import (
 	"github.com/nicboul/flowdata/internal/store"
 )
 
-type aggregator struct {
+type Aggregator struct {
 	Queue *queue.FlowDataQueue
 	Store *store.FlowDataStore
 }
 
-func NewAggregator(queue *queue.FlowDataQueue, store *store.FlowDataStore) *aggregator {
-	return &aggregator{
+func NewAggregator(queue *queue.FlowDataQueue, store *store.FlowDataStore) *Aggregator {
+	return &Aggregator{
 		Queue: queue,
 		Store: store,
 	}
 }
 
-func (a *aggregator) Aggregator() {
+func (a *Aggregator) Worker() {
 	for flowData := range a.Queue.Channel {
 		var key store.FlowDataTuple
 		for _, item := range flowData {

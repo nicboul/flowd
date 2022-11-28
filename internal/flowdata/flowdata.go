@@ -17,22 +17,26 @@ type FlowDataParams struct {
 	Queue   *queue.FlowDataQueue
 }
 
-func NewFlowDataServer(p FlowDataParams) *mux.Router {
+type FlowDataServer struct {
+	aggregator *aggregator.Aggregator
+	writer     *flowdatawrite.FlowDataWrite
+	reader     *flowdataread.FlowDataRead
+	MuxRouter  *mux.Router
+}
 
-	aggregator := aggregator.NewAggregator(p.Queue, p.Store)
-	go aggregator.Aggregator()
+func NewFlowDataServer(p FlowDataParams) *FlowDataServer {
 
-	flowDataWriteHandler := &flowdatawrite.FlowDataWrite{
-		Queue: p.Queue,
-	}
+	server := FlowDataServer{}
 
-	flowDataReadHandler := &flowdataread.FlowDataRead{
-		Store: p.Store,
-	}
+	server.aggregator = aggregator.NewAggregator(p.Queue, p.Store)
+	go server.aggregator.Worker()
 
-	muxRouter := mux.NewRouter()
-	muxRouter.Methods("POST").PathPrefix("/flows").Handler(flowDataWriteHandler)
-	muxRouter.Methods("GET").PathPrefix("/flows").Handler(flowDataReadHandler)
+	server.writer = flowdatawrite.NewFlowDataWrite(p.Queue)
+	server.reader = flowdataread.NewFlowDataRead(p.Store)
 
-	return muxRouter
+	server.MuxRouter = mux.NewRouter()
+	server.MuxRouter.Methods("POST").PathPrefix("/flows").Handler(server.writer)
+	server.MuxRouter.Methods("GET").PathPrefix("/flows").Handler(server.reader)
+
+	return &server
 }

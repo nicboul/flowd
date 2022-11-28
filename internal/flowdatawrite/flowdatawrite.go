@@ -14,6 +14,12 @@ type FlowDataWrite struct {
 	Queue *queue.FlowDataQueue
 }
 
+func NewFlowDataWrite(queue *queue.FlowDataQueue) *FlowDataWrite {
+	return &FlowDataWrite{
+		Queue: queue,
+	}
+}
+
 func (f *FlowDataWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()

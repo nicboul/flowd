@@ -14,6 +14,12 @@ type FlowDataRead struct {
 	Store *store.FlowDataStore
 }
 
+func NewFlowDataRead(store *store.FlowDataStore) *FlowDataRead {
+	return &FlowDataRead{
+		Store: store,
+	}
+}
+
 func (f *FlowDataRead) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hourStr := r.URL.Query().Get("hour")
 	hour, err := strconv.Atoi(hourStr)

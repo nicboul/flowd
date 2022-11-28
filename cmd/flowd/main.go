@@ -54,7 +54,7 @@ func main() {
 
 		log.Info("listening on: ", listen)
 
-		return http.ListenAndServe(listen, server)
+		return http.ListenAndServe(listen, server.MuxRouter)
 	}
 
 	err := app.Run(os.Args)
