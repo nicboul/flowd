@@ -1,65 +1,43 @@
 package main
 
 import (
-	"net/http"
-	"os"
+	"context"
+	"flag"
+	"fmt"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/nicboul/flowdata/internal/flowdata"
 	"github.com/nicboul/flowdata/internal/queue"
 	"github.com/nicboul/flowdata/internal/store"
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 )
 
 func main() {
 
-	app := cli.NewApp()
-	app.Name = "flowd"
-	app.Usage = "flowd collect, aggregate, store and serve flow data"
+	timeoutFlag := flag.Int64("timeout", 600, "timeout in second")
+	portFlag := flag.String("port", "8080", "port number the service is listening to")
+	listenFlag := flag.String("listen", "127.0.0.1", "IP address the service is listenign to")
+	flag.Parse()
 
-	app.Flags = []cli.Flag{
-		cli.IntFlag{
-			Name:   "timeout",
-			Value:  600,
-			Usage:  "timeout in seconds",
-			EnvVar: "FLOWD-TIMEOUT",
-		},
-		cli.StringFlag{
-			Name:   "port",
-			Value:  "8080",
-			Usage:  "port number the service is listening to",
-			EnvVar: "FLOWD-PORT",
-		},
-		cli.StringFlag{
-			Name:   "listen",
-			Value:  "127.0.0.1",
-			Usage:  "IP address the service is listening to",
-			EnvVar: "FLOWD-LISTEN",
-		},
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	log.SetFormatter(&log.JSONFormatter{})
+	log.Info("starting service flowd")
+
+	params := flowdata.FlowDataParams{
+		Timeout: time.Second * time.Duration(*timeoutFlag),
+		Store:   store.NewFlowDataStore(),
+		Queue:   queue.NewFlowDataQueue(5000),
+		Listen:  *listenFlag + ":" + *portFlag,
 	}
 
-	app.Action = func(c *cli.Context) error {
-		log.SetFormatter(&log.JSONFormatter{})
-		log.Info("starting service flowd")
+	server := flowdata.NewFlowDataServer(params)
 
-		params := flowdata.FlowDataParams{
-			Timeout: time.Second * time.Duration(int64(c.Int("timeout"))),
-			Store:   store.NewFlowDataStore(),
-			Queue:   queue.NewFlowDataQueue(100),
-		}
+	log.Info("listening on: ", params.Listen)
+	server.Serve(ctx)
 
-		server := flowdata.NewFlowDataServer(params)
-		listen := c.String("listen") + ":" + c.String("port")
-
-		log.Info("listening on: ", listen)
-
-		return http.ListenAndServe(listen, server.MuxRouter)
-	}
-
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
+	fmt.Printf("bye bye!\n")
 }

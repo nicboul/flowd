@@ -36,5 +36,10 @@ func (f *FlowDataWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f.Queue.TryEnqueue(flowData)
+	// If we fail to queue the message, we need to notice the caller
+	success := f.Queue.TryEnqueue(flowData)
+	if !success {
+		http.Error(w, "reached max capacity", http.StatusInternalServerError)
+		return
+	}
 }

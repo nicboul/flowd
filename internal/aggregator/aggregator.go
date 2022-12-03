@@ -19,6 +19,14 @@ func NewAggregator(queue *queue.FlowDataQueue, store *store.FlowDataStore) *Aggr
 
 func (a *Aggregator) Worker() {
 	for flowData := range a.Queue.Channel {
+
+		/* for testing
+		fmt.Println(len(a.Queue.Channel))
+		if len(a.Queue.Channel) > 20 {
+			go a.Worker()
+		}
+		time.Sleep(15 * time.Millisecond)
+		*/
 		var key store.FlowDataTuple
 		for _, item := range flowData {
 			key.SrcApp = item.SrcApp
