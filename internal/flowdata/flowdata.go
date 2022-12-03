@@ -47,6 +47,19 @@ func NewFlowDataServer(p FlowDataParams) *FlowDataServer {
 	return &server
 }
 
+func scaleAggregator(s *FlowDataServer) {
+	w := 0
+	for {
+		if len(s.Params.Queue.Channel) > 20 {
+			s.aggregator.Wg.Add(1)
+			w++
+			go s.aggregator.Worker(w)
+
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
 func (s *FlowDataServer) Serve(ctx context.Context) error {
 
 	httpSrv := &http.Server{
@@ -54,9 +67,9 @@ func (s *FlowDataServer) Serve(ctx context.Context) error {
 		Handler: s.MuxRouter,
 	}
 
-	errGroup, ctx := errgroup.WithContext(ctx)
+	errGroup, errctx := errgroup.WithContext(ctx)
 	errGroup.Go(func() error {
-		<-ctx.Done()
+		<-errctx.Done()
 		return httpSrv.Close()
 	})
 
@@ -68,8 +81,15 @@ func (s *FlowDataServer) Serve(ctx context.Context) error {
 		return nil
 	})
 
-	go s.aggregator.Worker()
+	go scaleAggregator(s)
 
-	return errGroup.Wait()
+	/* Wait for the http server to stop running */
+	err := errGroup.Wait()
 
+	/* Close the Queue (the channel being needs to be closed */
+	s.Params.Queue.Close()
+	/* Wait for the workers to finish their job */
+	s.aggregator.Wg.Wait()
+
+	return err
 }

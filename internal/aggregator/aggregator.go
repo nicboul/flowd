@@ -1,6 +1,10 @@
 package aggregator
 
 import (
+	"fmt"
+	"sync"
+	"time"
+
 	"github.com/nicboul/flowdata/internal/queue"
 	"github.com/nicboul/flowdata/internal/store"
 )
@@ -8,6 +12,7 @@ import (
 type Aggregator struct {
 	Queue *queue.FlowDataQueue
 	Store *store.FlowDataStore
+	Wg    sync.WaitGroup
 }
 
 func NewAggregator(queue *queue.FlowDataQueue, store *store.FlowDataStore) *Aggregator {
@@ -17,16 +22,13 @@ func NewAggregator(queue *queue.FlowDataQueue, store *store.FlowDataStore) *Aggr
 	}
 }
 
-func (a *Aggregator) Worker() {
+func (a *Aggregator) Worker(worker int) {
+	defer a.Wg.Done()
+
 	for flowData := range a.Queue.Channel {
 
-		/* for testing
-		fmt.Println(len(a.Queue.Channel))
-		if len(a.Queue.Channel) > 20 {
-			go a.Worker()
-		}
-		time.Sleep(15 * time.Millisecond)
-		*/
+		fmt.Printf("(%d): %v\n", worker, len(a.Queue.Channel))
+		time.Sleep(55 * time.Millisecond)
 		var key store.FlowDataTuple
 		for _, item := range flowData {
 			key.SrcApp = item.SrcApp
@@ -42,4 +44,5 @@ func (a *Aggregator) Worker() {
 			a.Store.Save(&key, &value)
 		}
 	}
+	fmt.Printf("end of aggregator\n")
 }

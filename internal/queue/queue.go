@@ -1,5 +1,7 @@
 package queue
 
+import "sync"
+
 type FlowData struct {
 	SrcApp  string `json:"src_app"`
 	DestApp string `json:"dest_app"`
@@ -11,12 +13,17 @@ type FlowData struct {
 
 type FlowDataQueue struct {
 	Channel chan []FlowData
+	Wg      sync.WaitGroup
 }
 
 func NewFlowDataQueue(size int) *FlowDataQueue {
 	return &FlowDataQueue{
 		Channel: make(chan []FlowData, size),
 	}
+}
+
+func (q *FlowDataQueue) Close() {
+	close(q.Channel)
 }
 
 func (q *FlowDataQueue) TryEnqueue(flowData []FlowData) bool {
