@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -47,16 +48,30 @@ func NewFlowDataServer(p FlowDataParams) *FlowDataServer {
 	return &server
 }
 
-func scaleAggregator(s *FlowDataServer) {
+func scaleAggregator(s *FlowDataServer, max int) {
 	w := 0
 	for {
-		if len(s.Params.Queue.Channel) > 20 {
+		if w < max && len(s.Params.Queue.Channel) > 20 {
 			s.aggregator.Wg.Add(1)
 			w++
 			go s.aggregator.Worker(w)
 
 		}
 		time.Sleep(1 * time.Second)
+	}
+}
+
+func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+	ch := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+	select {
+	case <-ch:
+		return true
+	case <-time.After(timeout):
+		return false
 	}
 }
 
@@ -81,7 +96,7 @@ func (s *FlowDataServer) Serve(ctx context.Context) error {
 		return nil
 	})
 
-	go scaleAggregator(s)
+	go scaleAggregator(s, 100)
 
 	/* Wait for the http server to stop running */
 	err := errGroup.Wait()
@@ -89,7 +104,7 @@ func (s *FlowDataServer) Serve(ctx context.Context) error {
 	/* Close the Queue (the channel being needs to be closed */
 	s.Params.Queue.Close()
 	/* Wait for the workers to finish their job */
-	s.aggregator.Wg.Wait()
+	waitTimeout(&s.aggregator.Wg, 1*time.Minute)
 
 	return err
 }

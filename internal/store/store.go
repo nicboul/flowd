@@ -15,29 +15,20 @@ type FlowDataValue struct {
 }
 
 type FlowDataStore struct {
-	lock sync.RWMutex
+	Lock sync.RWMutex
 	init bool
 	kv   map[int]map[FlowDataTuple]FlowDataValue
 }
 
-type StoreManager interface {
-	Save(FlowDataTuple, FlowDataValue) error
-	LookupByFlowData(FlowDataTuple) FlowDataValue
-	LookupByHour(int) map[FlowDataTuple]FlowDataValue
-}
-
 func NewFlowDataStore() *FlowDataStore {
 	return &FlowDataStore{
-		lock: sync.RWMutex{},
+		Lock: sync.RWMutex{},
 		kv:   map[int]map[FlowDataTuple]FlowDataValue{},
 		init: false,
 	}
 }
 
-func (s *FlowDataStore) Save(key *FlowDataTuple, value *FlowDataValue) error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
+func (s *FlowDataStore) SaveWithLock(key *FlowDataTuple, value *FlowDataValue) error {
 	valueMap := s.kv[key.Hour]
 	if valueMap == nil {
 		s.kv[key.Hour] = make(map[FlowDataTuple]FlowDataValue)
@@ -47,16 +38,13 @@ func (s *FlowDataStore) Save(key *FlowDataTuple, value *FlowDataValue) error {
 	return nil
 }
 
-func (s *FlowDataStore) LookupByTuple(key FlowDataTuple) FlowDataValue {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
+func (s *FlowDataStore) LookupByTupleWithLock(key FlowDataTuple) FlowDataValue {
 	return s.kv[key.Hour][key]
 }
 
 func (s *FlowDataStore) LookupByHour(hour int) map[FlowDataTuple]FlowDataValue {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.Lock.RLock()
+	defer s.Lock.RUnlock()
 
 	return s.kv[hour]
 }

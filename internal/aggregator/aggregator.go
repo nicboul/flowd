@@ -27,8 +27,8 @@ func (a *Aggregator) Worker(worker int) {
 
 	for flowData := range a.Queue.Channel {
 
-		fmt.Printf("(%d): %v\n", worker, len(a.Queue.Channel))
-		time.Sleep(55 * time.Millisecond)
+		//fmt.Printf("(%d): %v\n", worker, len(a.Queue.Channel))
+		time.Sleep(300 * time.Millisecond)
 		var key store.FlowDataTuple
 		for _, item := range flowData {
 			key.SrcApp = item.SrcApp
@@ -36,13 +36,16 @@ func (a *Aggregator) Worker(worker int) {
 			key.VpcId = item.VpcId
 			key.Hour = item.Hour
 
-			value := a.Store.LookupByTuple(key)
+			/* Lock the whole transaction */
+			a.Store.Lock.Lock()
+			value := a.Store.LookupByTupleWithLock(key)
 
 			value.BytesRx += item.BytesRx
 			value.BytesTx += item.BytesTx
 
-			a.Store.Save(&key, &value)
+			a.Store.SaveWithLock(&key, &value)
+			a.Store.Lock.Unlock()
 		}
 	}
-	fmt.Printf("end of aggregator\n")
+	fmt.Printf("end of aggregator (%d)\n", worker)
 }

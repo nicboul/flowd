@@ -45,10 +45,10 @@ func Test_Store(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := NewFlowDataStore()
 
-			store.Save(tt.tuple, tt.value)
+			store.SaveWithLock(tt.tuple, tt.value)
 
 			byHour := store.LookupByHour(tt.tuple.Hour)
-			byTuple := store.LookupByTuple(*tt.tuple)
+			byTuple := store.LookupByTupleWithLock(*tt.tuple)
 
 			if !(fmt.Sprint(byTuple) == fmt.Sprint(tt.expectedByTuple)) {
 				t.Fatalf("unexpected result:\n- want: %v\n- got: %v",
